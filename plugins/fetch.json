@@ -1,0 +1,10 @@
+{
+  "cordova-plugin-ssh-connect": {
+    "source": {
+      "type": "registry",
+      "id": "cordova-plugin-ssh-connect"
+    },
+    "is_top_level": true,
+    "variables": {}
+  }
+}
