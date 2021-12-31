@@ -1,8 +1,8 @@
 {
-  "cordova-plugin-ssh-connect": {
+  "cordova-plugin-bluetooth-serial": {
     "source": {
       "type": "registry",
-      "id": "cordova-plugin-ssh-connect"
+      "id": "cordova-plugin-bluetooth-serial"
     },
     "is_top_level": true,
     "variables": {}

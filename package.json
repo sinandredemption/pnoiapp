@@ -14,14 +14,14 @@
   "license": "Apache-2.0",
   "devDependencies": {
     "cordova-android": "^10.1.1",
-    "cordova-plugin-ssh-connect": "^1.1.1"
+    "cordova-plugin-bluetooth-serial": "^0.4.7"
   },
   "cordova": {
     "platforms": [
       "android"
     ],
     "plugins": {
-      "cordova-plugin-ssh-connect": {}
+      "cordova-plugin-bluetooth-serial": {}
     }
   }
 }

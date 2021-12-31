@@ -7,7 +7,7 @@
     "files": {}
   },
   "installed_plugins": {
-    "cordova-plugin-ssh-connect": {
+    "cordova-plugin-bluetooth-serial": {
       "PACKAGE_NAME": "com.spire.pnoi"
     }
   },

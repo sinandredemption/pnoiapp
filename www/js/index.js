@@ -1,100 +1,189 @@
 /*
- * Licensed to the Apache Software Foundation (ASF) under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership.  The ASF licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
+    SimpleSerial index.js
+    Created 7 May 2013
+    Modified 9 May 2013
+    by Tom Igoe
+*/
+
+
+var app = {
+    macAddress: "E4:5F:01:6B:0E:E1",  // get your mac address from bluetoothSerial.list
+    chars: "",
+
+/*
+    Application constructor
  */
+    initialize: function() {
+        this.bindEvents();
+        console.log("Starting SimpleSerial app");
+    },
+/*
+    bind any events that are required on startup to listeners:
+*/
+    bindEvents: function() {
+        document.addEventListener('deviceready', this.onDeviceReady, false);
+        connectButton.addEventListener('touchend', app.manageConnection, false);
+        commandButton.addEventListener('touchend', app.toggleRecording, false);
+		transferButton.addEventListener('touchend', app.transferRecording, false);
+    },
 
-const ErrorOutput = "[!!]";
+/*
+    this runs when the device is ready for user interaction:
+*/
+    onDeviceReady: function() {
+        // check to see if Bluetooth is turned on.
+        // this function is called only
+        //if isEnabled(), below, returns success:
+        var listPorts = function() {
+            // list the available BT ports:
+            bluetoothSerial.list(
+                function(results) {
+                    app.display(JSON.stringify(results));
+                },
+                function(error) {
+                    app.display(JSON.stringify(error));
+                }
+            );
+        }
 
-var IsSSHConnected = false;
-var LastSSHOutput;
+        // if isEnabled returns failure, this function is called:
+        var notEnabled = function() {
+            app.display("Bluetooth is not enabled.")
+        }
 
-var success = function (resp) {
- 	writeLog("[rasp] " + resp);
-	LastSSHOutput = resp;
-}
-  
-var failure = function (error) {
-  	alert(error);
-	writeLog("[ERROR] " + error);
-	LastSSHOutput = ErrorOutput;
-}
- 
-function SSH(cmd) {
-    window.cordova.plugins.sshConnect.executeCommand(cmd, success, failure);
-}
+         // check if Bluetooth is on:
+        bluetoothSerial.isEnabled(
+            listPorts,
+            notEnabled
+        );
+    },
+/*
+    Connects if not connected, and disconnects if connected:
+*/
+    manageConnection: function() {
 
-function writeLog(msg) {
-	document.getElementById("log").innerHTML += msg + "<br/>";
-}
-// Wait for the deviceready event before using any of Cordova's device APIs.
-// See https://cordova.apache.org/docs/en/latest/cordova/events/events.html#deviceready
+        // connect() will get called only if isConnected() (below)
+        // returns failure. In other words, if not connected, then connect:
+        var connect = function () {
+            // if not connected, do this:
+            // clear the screen and display an attempt to connect
+            app.clear();
+            app.display("Attempting to connect. " +
+                "Make sure the serial port is open on the target device.");
+            // attempt to connect:
+            bluetoothSerial.connect(
+                app.macAddress,  // device to connect to
+                app.openPort,    // start listening if you succeed
+                app.showError    // show the error if you fail
+            );
+        };
 
-function toggleRecording() {
-	if (!IsSSHConnected) { failure("SSH not connected"); return; }
+        // disconnect() will get called only if isConnected() (below)
+        // returns success  In other words, if  connected, then disconnect:
+        var disconnect = function () {
+            app.display("attempting to disconnect");
+            // if connected, do this:
+            bluetoothSerial.disconnect(
+                app.closePort,     // stop listening to the port
+                app.showError      // show the error if you fail
+            );
+        };
 
-	if (document.getElementById("startstop_button").innerHTML == "Start") // Stop Recording
-	{
-		writeLog("starting recording...");
-		SSH("df -h");
-		if (LastSSHOutput != ErrorOutput)
-			document.getElementById("startstop_button").innerHTML = "Stop";
-	}
-	else if (document.getElementById("startstop_button").innerHTML == "Stop") // Start Recording
-	{
-		writeLog("stopping recording...");
-		SSH("free");
-		if (LastSSHOutput != ErrorOutput)
-			document.getElementById("startstop_button").innerHTML = "Start";
-	}
-	else
-	{
-		failure("unknown state");
-	}
-}
+        // here's the real action of the manageConnection function:
+        bluetoothSerial.isConnected(disconnect, connect);
+    },
 
-function downloadRecording() {
-}
+    toggleRecording: function() {
+	    var startRecording = function () {
+		    bluetoothSerial.write("startrecording\n",
+			    function() {
+				    app.display("[sent] startrecording");
+				    commandButton.innerHTML = "Stop";
+			    },
+			    app.showError
+		    );
+	    };
 
-function connectSSH() {
-	writeLog("trying to connect...");
-/*	window.cordova.plugins.sshConnect.connect('pi', 'raspberry', '192.168.4.1', 22, writeLog("Connection successful to Raspberry Pi!"), failure);*/
-	window.cordova.plugins.sshConnect.connect('pi', 'raspberry', '192.168.4.1', 22,
-		function(resp) {
-			if (resp) {
-				writeLog("connection successful");
-				IsSSHConnected = true;
-				//window.cordova.plugins.sshConnect.executeCommand('top', success, failure);
-				//window.cordova.plugins.sshConnect.disconnect(success, failure);
- 			}
-		}
-	, failure);
+	    var stopRecording = function () {
+		    bluetoothSerial.write("stoprecording\n",
+			    function() {
+				    app.display("[sent] stoprecording");
+				    commandButton.innerHTML = "Start";
+			    },
+			    app.showError
+		    );
+	    };
 
-	if (IsSSHConnected) document.getElementById("connection_button").innerHTML = "Disconnect";
-	else document.getElementById("connection_button").innerHTML = "Connect";
-}
+	    if      (commandButton.innerHTML == "Start") startRecording();
+	    else if (commandButton.innerHTML == "Stop")  stopRecording();
+    },
+    
+	transferRecording: function () {
+		bluetoothSerial.write("transferrecording\n",
+			function() { // Success
+				app.display("[sent] transferrecording");
+	   		},
+	    	app.showError
+		);
+	},
+/*
+    subscribes to a Bluetooth serial listener for newline
+    and changes the button:
+*/
+    openPort: function() {
+        // if you get a good Bluetooth serial connection:
+        app.display("Connected to: " + app.macAddress);
+        // change the button's name:
+        connectButton.innerHTML = "Disconnect";
+        // set up a listener to listen for newlines
+        // and display any new data that's come in since
+        // the last newline:
+        bluetoothSerial.subscribe('\n', function (data) {
+            app.clear();
+            app.display(data);
+        });
+    },
 
-document.addEventListener('deviceready', onDeviceReady, false);
-function onDeviceReady() {
-	// Cordova is now initialized. Have fun!
+/*
+    unsubscribes from any Bluetooth serial listener and changes the button:
+*/
+    closePort: function() {
+        // if you get a good Bluetooth serial connection:
+        app.display("Disconnected from: " + app.macAddress);
+        // change the button's name:
+        connectButton.innerHTML = "Connect";
+        // unsubscribe from listening:
+        bluetoothSerial.unsubscribe(
+                function (data) {
+                    app.display(data);
+                },
+                app.showError
+        );
+    },
+/*
+    appends @error to the message div:
+*/
+    showError: function(error) {
+        app.display(error);
+    },
 
-	console.log('Running cordova-' + cordova.platformId + '@' + cordova.version);
-	document.getElementById('deviceready').classList.add('ready');
-	writeLog("device is ready");
+/*
+    appends @message to the message div:
+*/
+    display: function(message) {
+        var display = document.getElementById("message"), // the message div
+            lineBreak = document.createElement("br"),     // a line break
+            label = document.createTextNode(message);     // create the label
 
-	connectSSH();
-}
+        display.appendChild(lineBreak);          // add a line break
+        display.appendChild(label);              // add the message node
+    },
+/*
+    clears the message div:
+*/
+    clear: function() {
+        var display = document.getElementById("message");
+        display.innerHTML = "";
+    }
+};      // end of app
 

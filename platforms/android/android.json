@@ -7,9 +7,10 @@
     "files": {
       "res/xml/config.xml": {
         "parents": {
-          "/*": [
+          "/*": [],
+          "/widget": [
             {
-              "xml": "<feature name=\"sshConnect\"><param name=\"android-package\" value=\"sshConnect\" /><param name=\"onload\" value=\"true\" /></feature>",
+              "xml": "<feature name=\"BluetoothSerial\"><param name=\"android-package\" value=\"com.megster.cordova.BluetoothSerial\" /></feature>",
               "count": 1
             }
           ]
@@ -17,9 +18,18 @@
       },
       "AndroidManifest.xml": {
         "parents": {
-          "/*": [
+          "/*": [],
+          "/manifest": [
             {
-              "xml": "<uses-permission android:name=\"android.permission.INTERNET\" />",
+              "xml": "<uses-permission android:name=\"android.permission.BLUETOOTH\" />",
+              "count": 1
+            },
+            {
+              "xml": "<uses-permission android:name=\"android.permission.BLUETOOTH_ADMIN\" />",
+              "count": 1
+            },
+            {
+              "xml": "<uses-permission android:name=\"android.permission.ACCESS_COARSE_LOCATION\" />",
               "count": 1
             }
           ]
@@ -28,22 +38,22 @@
     }
   },
   "installed_plugins": {
-    "cordova-plugin-ssh-connect": {
+    "cordova-plugin-bluetooth-serial": {
       "PACKAGE_NAME": "com.spire.pnoi"
     }
   },
   "dependent_plugins": {},
   "modules": [
     {
-      "id": "cordova-plugin-ssh-connect.sshConnect",
-      "file": "plugins/cordova-plugin-ssh-connect/www/sshConnect.js",
-      "pluginId": "cordova-plugin-ssh-connect",
+      "id": "cordova-plugin-bluetooth-serial.bluetoothSerial",
+      "file": "plugins/cordova-plugin-bluetooth-serial/www/bluetoothSerial.js",
+      "pluginId": "cordova-plugin-bluetooth-serial",
       "clobbers": [
-        "cordova.plugins.sshConnect"
+        "window.bluetoothSerial"
       ]
     }
   ],
   "plugin_metadata": {
-    "cordova-plugin-ssh-connect": "1.1.1"
+    "cordova-plugin-bluetooth-serial": "0.4.7"
   }
 }
