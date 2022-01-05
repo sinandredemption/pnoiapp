@@ -1,113 +1,119 @@
-/*
-    SimpleSerial index.js
-    Created 7 May 2013
-    Modified 9 May 2013
-    by Tom Igoe
-*/
-
+/**
+ *  Name:        PnoiPhone index.js
+ *  Description: Cordova JS Backend code for PnoiPhone app
+ *  Author:      Syed Fahad
+ *  Created:     Jan 2022
+**/
 
 var app = {
-    macAddress: "E4:5F:01:6B:0E:E1",  // get your mac address from bluetoothSerial.list
+    macAddress: "E4:5F:01:6B:0E:E1",  // FIXME
     chars: "",
 
-/*
-    Application constructor
- */
-    initialize: function() {
+    initialize: function()
+	{
         this.bindEvents();
-        console.log("Starting SimpleSerial app");
+        console.log("Starting PnoiPhone app");
     },
-/*
-    bind any events that are required on startup to listeners:
-*/
-    bindEvents: function() {
+	
+    // bind any events that are required on startup to listeners:
+    bindEvents: function()
+	{
         document.addEventListener('deviceready', this.onDeviceReady, false);
-        connectButton.addEventListener('touchend', app.manageConnection, false);
+        connectButton.addEventListener('touchend', app.toggleConnection, false);
         commandButton.addEventListener('touchend', app.toggleRecording, false);
 		transferButton.addEventListener('touchend', app.transferRecording, false);
     },
 
-/*
-    this runs when the device is ready for user interaction:
-*/
-    onDeviceReady: function() {
-        // check to see if Bluetooth is turned on.
-        // this function is called only
-        //if isEnabled(), below, returns success:
-        var listPorts = function() {
-            // list the available BT ports:
+    onDeviceReady: function()
+	{
+		alert("Welcome to ChinaTown!");
+		// Called by bluetoothSerial.isEnabled() below if Bluetooth is on
+        var listPorts = function()
+		{
+            // List the available BT ports:
             bluetoothSerial.list(
-                function(results) {
-                    app.display(JSON.stringify(results));
-                },
-                function(error) {
-                    app.display(JSON.stringify(error));
-                }
+					function(results) { app.display(JSON.stringify(results)); },
+                    function(error)   { app.display(JSON.stringify(error)); }
             );
         }
 
-        // if isEnabled returns failure, this function is called:
-        var notEnabled = function() {
-            app.display("Bluetooth is not enabled.")
-        }
+        // Called by bluetoothSerial.isEnabled() below if Bluetooth is off
+        var notEnabled = function() { app.display("Bluetooth is not enabled."); }
 
          // check if Bluetooth is on:
         bluetoothSerial.isEnabled(
-            listPorts,
-            notEnabled
+			listPorts, // BT on
+            notEnabled // BT off
         );
-    },
-/*
-    Connects if not connected, and disconnects if connected:
-*/
-    manageConnection: function() {
 
-        // connect() will get called only if isConnected() (below)
-        // returns failure. In other words, if not connected, then connect:
-        var connect = function () {
-            // if not connected, do this:
-            // clear the screen and display an attempt to connect
+    },
+	
+    // Connects if not connected, and disconnects if connected:
+    toggleConnection: function()
+	{
+        var connect = function ()
+		{
             app.clear();
             app.display("Attempting to connect. " +
                 "Make sure the serial port is open on the target device.");
+			
+			connectButton.disabled = true;
+
             // attempt to connect:
             bluetoothSerial.connect(
                 app.macAddress,  // device to connect to
                 app.openPort,    // start listening if you succeed
                 app.showError    // show the error if you fail
             );
+
+			connectButton.disabled = false;
         };
 
-        // disconnect() will get called only if isConnected() (below)
-        // returns success  In other words, if  connected, then disconnect:
-        var disconnect = function () {
-            app.display("attempting to disconnect");
-            // if connected, do this:
-            bluetoothSerial.disconnect(
-                app.closePort,     // stop listening to the port
-                app.showError      // show the error if you fail
-            );
+        var disconnect = function ()
+		{
+            
+			if (confirm("Are you sure you want to disconnect"))
+			{
+				app.display("attempting to disconnect");
+				
+				connectButton.disabled = true;
+				
+				bluetoothSerial.disconnect(
+					app.closePort,     // stop listening to the port
+					app.showError      // show the error if you fail
+				);
+
+				connectButton.disabled = false;
+			}
         };
 
-        // here's the real action of the manageConnection function:
-        bluetoothSerial.isConnected(disconnect, connect);
+        bluetoothSerial.isConnected(
+			disconnect, // if connected, disconnect
+			connect		// if disconnected, connect
+		);
     },
 
-    toggleRecording: function() {
-	    var startRecording = function () {
-		    bluetoothSerial.write("startrecording\n",
-			    function() {
-				    app.display("[sent] startrecording");
+	// send command to start or stop recording
+    toggleRecording: function()
+	{
+	    var startRecording = function ()
+		{
+		    bluetoothSerial.write("CMD_START\n",
+			    function() 
+				{ // Command sent successfully
+				    app.display("Starting recording...");
 				    commandButton.innerHTML = "Stop";
 			    },
-			    app.showError
+			    app.showError // Failed
 		    );
 	    };
 
-	    var stopRecording = function () {
-		    bluetoothSerial.write("stoprecording\n",
-			    function() {
-				    app.display("[sent] stoprecording");
+	    var stopRecording = function ()
+		{
+		    bluetoothSerial.write("CMD_STOP\n",
+			    function()
+				{ // Command sent successfully
+				    app.display("Stopping recording");
 				    commandButton.innerHTML = "Start";
 			    },
 			    app.showError
@@ -118,36 +124,38 @@ var app = {
 	    else if (commandButton.innerHTML == "Stop")  stopRecording();
     },
     
-	transferRecording: function () {
-		bluetoothSerial.write("transferrecording\n",
-			function() { // Success
-			app.display("[sent] transferrecording");
-				commandButton.innerHTML = "Stop";
-	   		 },
+	transferRecording: function ()
+	{
+		bluetoothSerial.write("CMD_TRANSFER\n",
+			function()
+			{ // Success
+				app.display("Transferring...");
+	   		},
 	    	app.showError
 		);
 	},
-/*
-    subscribes to a Bluetooth serial listener for newline
-    and changes the button:
-*/
-    openPort: function() {
-        // if you get a good Bluetooth serial connection:
+
+    // Subscribes to a Bluetooth serial listener and updates the connect button
+    openPort: function()
+	{
         app.display("Connected to: " + app.macAddress);
-        // change the button's name:
-        connectButton.innerHTML = "Disconnect";
-        // set up a listener to listen for newlines
+        
+		// set up a listener to listen for newlines
         // and display any new data that's come in since
         // the last newline:
-        bluetoothSerial.subscribe('\n', function (data) {
-            app.clear();
-            app.display(data);
-        });
+        bluetoothSerial.subscribe('\n',
+			function (data)
+			{
+            	app.clear();
+            	app.process(data);
+        	}
+		);
+		
+        // change the button's name:
+        connectButton.innerHTML = "Disconnect";
     },
 
-/*
-    unsubscribes from any Bluetooth serial listener and changes the button:
-*/
+    // Unsubscribes from any Bluetooth serial listener and updates the connect button 
     closePort: function() {
         // if you get a good Bluetooth serial connection:
         app.display("Disconnected from: " + app.macAddress);
@@ -155,34 +163,33 @@ var app = {
         connectButton.innerHTML = "Connect";
         // unsubscribe from listening:
         bluetoothSerial.unsubscribe(
-                function (data) {
+                function (data)
+				{
                     app.display(data);
                 },
                 app.showError
         );
     },
-/*
-    appends @error to the message div:
-*/
-    showError: function(error) {
-        app.display(error);
-    },
+	
+    showError: function(error) { app.display(error); },
 
-/*
-    appends @message to the message div:
-*/
-    display: function(message) {
-        var display = document.getElementById("message"), // the message div
-            lineBreak = document.createElement("br"),     // a line break
-            label = document.createTextNode(message);     // create the label
+	// Processes and displays data recieved from the server
+	process: function(data) { app.display(data); },
+	
+    // appends @message to the message div:
+    display: function(message)
+	{
+        var display = document.getElementById("message"), 
+            lineBreak = document.createElement("br"),     
+            label = document.createTextNode(message);
 
         display.appendChild(lineBreak);          // add a line break
         display.appendChild(label);              // add the message node
     },
-/*
-    clears the message div:
-*/
-    clear: function() {
+	
+    // Clears the message div:
+    clear: function()
+	{
         var display = document.getElementById("message");
         display.innerHTML = "";
     }
