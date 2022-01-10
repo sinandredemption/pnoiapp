@@ -26,7 +26,6 @@ var app = {
 
     onDeviceReady: function()
 	{
-		alert("Welcome to ChinaTown!");
 		// Called by bluetoothSerial.isEnabled() below if Bluetooth is on
         var listPorts = function()
 		{
@@ -126,13 +125,27 @@ var app = {
     
 	transferRecording: function ()
 	{
-		bluetoothSerial.write("CMD_TRANSFER\n",
-			function()
-			{ // Success
-				app.display("Transferring...");
-	   		},
-	    	app.showError
-		);
+		var sendTransferCommand = function ()
+		{
+			bluetoothSerial.write("CMD_TRANSFER\n",
+				function()
+				{ // Success
+					app.display("Transferring...");
+				},
+				app.showError
+			);
+		};
+
+		// Check if the recording hasn't been stopped yet
+		if (commandButton.innerHTML == "Stop")
+		{
+			if (confirm("Do you want to stop the recording?"))
+			{
+					app.toggleRecording();
+					sendTransferCommand();
+			}
+		}
+		else sendTransferCommand();
 	},
 
     // Subscribes to a Bluetooth serial listener and updates the connect button
