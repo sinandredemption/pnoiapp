@@ -6,7 +6,7 @@
 **/
 
 var app = {
-    macAddress: "E4:5F:01:6B:0E:E1",  // FIXME
+    macAddress: "",
     chars: "",
 
     initialize: function()
@@ -26,14 +26,30 @@ var app = {
 
     onDeviceReady: function()
 	{
+		app.display("Finding all available Bluetooth devices...");
+
+		var displayDevices = function (devices)
+		{
+			for (const device of devices)
+			{
+				var opt = document.createElement('option');
+				opt.value = device['address'];
+				opt.innerHTML = device['name'];
+				
+				document.getElementById("deviceSelect").appendChild(opt);
+			}
+		}
+		
 		// Called by bluetoothSerial.isEnabled() below if Bluetooth is on
         var listPorts = function()
 		{
             // List the available BT ports:
             bluetoothSerial.list(
-					function(results) { app.display(JSON.stringify(results)); },
+					displayDevices,
                     function(error)   { app.display(JSON.stringify(error)); }
             );
+
+			// TODO Add ability to display unpaired devices as well
         }
 
         // Called by bluetoothSerial.isEnabled() below if Bluetooth is off
@@ -45,6 +61,8 @@ var app = {
             notEnabled // BT off
         );
 
+		app.display("Completed device discovery");
+
     },
 	
     // Connects if not connected, and disconnects if connected:
@@ -52,9 +70,10 @@ var app = {
 	{
         var connect = function ()
 		{
+			app.macAddress = document.getElementById("deviceSelect").value;
             app.clear();
-            app.display("Attempting to connect. " +
-                "Make sure the serial port is open on the target device.");
+            app.display("Attempting to connect to " + app.macAddress + "... "
+                + "Make sure the serial port is open on the target device.");
 			
 			connectButton.disabled = true;
 

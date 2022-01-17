@@ -1,0 +1,3 @@
+Ability to discover unpaired devices and list them
+Automatically select/connect to devices labelled "pnoi" or some other unique label
+(C) Ability to get list of previously recorded files from Raspberry Pi and manage/transfer those
